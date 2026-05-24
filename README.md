@@ -13,7 +13,7 @@ Docker and docker compose installed into your system.
 1. Open your terminal (or Command Prompt/PowerShell) in the root directory of the project (where the docker-compose.yml file is located).
 
 2. Run the following command:
-   docker-compose up --build
+   docker compose up --build
 
 3. Open your browser and navigate to: http://localhost:8080
 
