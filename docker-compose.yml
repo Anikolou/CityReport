@@ -1,0 +1,41 @@
+services:
+  web:
+    build : .   
+    container_name: php_web
+    ports:
+      - "8080:80"
+    volumes:
+      - ./src:/var/www/html
+    depends_on:
+      - db
+      # Force the docker to run the script after the mounting of the volumes
+    entrypoint: ["/usr/local/bin/rights.sh"]
+    
+  db:
+    image: mysql:8
+    container_name: php_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: cityreport
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: phpmyadmin
+    restart: always
+    ports:
+      - "8082:80"
+    environment:
+      PMA_HOST: db
+      MYSQL_ROOT_PASSWORD: password
+    depends_on:
+      - db
+
+volumes:
+  mysql_data:
