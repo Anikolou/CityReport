@@ -51,10 +51,12 @@
                         
                         <form id="reportForm" action="insertIssue.php" method="POST" enctype="multipart/form-data">
                             
-                            <div class="mb-3">
+                            <div class="mb-3" style="position: relative;">
                                 <label for="title" class="form-label">Τίτλος Προβλήματος <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="title" name="title" minlength="5" maxlength="100" required>
+                                <input type="text" class="form-control check-length" id="title" name="title" data-min= "5" data-max = "100" data-feedback="feedback-title" required>
                                 <div class="form-text">Σύντομη περιγραφή (5 έως 100 χαρακτήρες).</div>
+                                
+                                <div id="feedback-title" class="custom-tooltip"></div> <!-- Θα γεμίσει με ενδεχόμενα μήνυμα σφάλματος από την charCounter.js -->
                             </div>
 
                             <div class="mb-3">
@@ -79,16 +81,16 @@
                                 <div id="addressFeedback" class="invalid-feedback">
                                     Η διεύθυνση δεν είναι έγκυρη. Παρακαλώ προσπαθήστε ξανά.
                                 </div>
-                                <!-- Κρυφά πεδία στο οποία επιστρέφονται οι τιμές από το geolocation.js-->
-                                <input type="hidden" id = "latitude" name = "latitude">
-                                <input type = "hidden" id = "longitude" name = "longitude">
-
+                                <input type="hidden" id="latitude" name="latitude">
+                                <input type="hidden" id="longitude" name="longitude">
                             </div>
 
                             <div class="mb-3">
                                 <label for="description" class="form-label">Περιγραφή <span class="text-danger">*</span></label>
-                                <textarea class="form-control" id="description" name="description" rows="5" minlength="10" maxlength="1000" required></textarea>
+                                <textarea class="form-control check-length" id="description" name="description" rows="5" data-min="10" data-max="1000" data-feedback = "feedback-description" required></textarea>
                                 <div class="form-text">Αναλυτική περιγραφή του προβλήματος (10 έως 1000 χαρακτήρες).</div>
+
+                                <div id="feedback-description" class="custom-tooltip"></div> <!-- Θα γεμίσει με ενδεχόμενα μήνυμα σφάλματος από την charCounter.js -->
                             </div>
 
                             <div class="mb-3">
@@ -98,7 +100,7 @@
                             </div>
 
                             <div class="d-grid gap-2">
-                                <button type="submit" name = "insert" class="btn btn-primary btn-lg">Υποβολή Αναφοράς</button>
+                                <button type="submit" name="insert" class="btn btn-primary btn-lg">Υποβολή Αναφοράς</button>
                             </div>
                         </form>
 
@@ -109,46 +111,38 @@
     </div>
 
     <footer class="bg-dark text-white pt-5 pb-5 mt-5">
-
-      <div class = "container">
-        <div class = "row align-items-center">
-
-            <div class= "col-md-6 mb-4 mb-md-0 pe-md-4">
-                <h4 class= "text-uppercase fw-bold mb-4" style = "letter-spacing: 1px;">Δημαρχείο</h4>
-
+      <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-6 mb-4 mb-md-0 pe-md-4">
+                <h4 class="text-uppercase fw-bold mb-4" style="letter-spacing: 1px;">Δημαρχείο</h4>
                 <ul>
-                    <li class = "mb-3">
+                    <li class="mb-3">
                         <strong>Διεύθυνση:</strong><br>
-                        <div class = "text-light">Καραολή & Δημητρίου 80 Πειραιάς 18450</div>
+                        <div class="text-light">Καραολή & Δημητρίου 80 Πειραιάς 18450</div>
                     </li>
-                    
-                    <li class = "mb-3">
+                    <li class="mb-3">
                         <strong>Τηλέφωνο:</strong><br>
-                        <a href= "tel:+302106021219" class = "text-light"> 210 6021219</a>
+                        <a href="tel:+302106021219" class="text-light"> 210 6021219</a>
                     </li>
-
-                    <li class = "mb-3">
+                    <li class="mb-3">
                         <strong>Email:</strong><br>
-                        <a href= "mailto:info@unipi.gr" class = "text-light"> info@unipi.gr</a>
+                        <a href="mailto:info@unipi.gr" class="text-light"> info@unipi.gr</a>
                     </li>
-
                 </ul>
-
-                <p class = "mt-4 text-secondary small">
+                <p class="mt-4 text-secondary small">
                         Πάντα δίπλα σας για όλες σας τις ανάγκες. (Φορέστε Ζώνες).
                 </p>
             </div>
-                 
-
-                <div class = "col-md-6">
-                    <div id = "footer-map" style = "height: 300px; width: 100%"></div>   
-                </div>
+            <div class="col-md-6">
+                <div id="footer-map" style="height: 300px; width: 100%"></div>   
+            </div>
         </div>
       </div>       
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src= charCounter.js></script>
     <script src="geolocation.js"></script>
     <script src = "mapFooter.js"></script>
 </body>

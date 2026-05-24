@@ -1,5 +1,6 @@
 async function forwardGeocode(query) {
     const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`;
+    // Προσθέτουμε τη λέξη async εδώ για να μπορούμε να χρησιμοποιήσουμε το await μέσα
     const response = await fetch(url);
     const results = await response.json();
     

@@ -12,7 +12,7 @@ document.addEventListener("DOMContentLoaded", function() {
             
             // Ξεκινάει το μπλοκ ελέγχου
             try {
-                // Περιμένουμε (await) να ολοκληρωθεί το upvote_action
+                // Περιμένουμε (await) να ολοκληρωθεί το upvote_db_cookie
                 const response = await fetch("upvote_db_cookie.php", {
                     method: "POST",
                     body: formData
