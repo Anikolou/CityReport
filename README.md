@@ -13,7 +13,7 @@ Docker and docker compose installed into your system.
 1. Open your terminal (or Command Prompt/PowerShell) in the root directory of the project (where the docker-compose.yml file is located).
 
 2. Run the following command:
-   docker-compose up --build
+   docker compose up --build
 
 3. Open your browser and navigate to: http://localhost:8080
 
@@ -25,8 +25,8 @@ Docker and docker compose installed into your system.
 
 
 5. Stopping the application: 
-   To stop the application press ctrl + c in the running terminal. Otherwise you can open a new terminal in the project folder and run the command: docker-compose down. 
-   If you want a whole reset of the application please run the command docker-compose down -v. 
+   To stop the application press ctrl + c in the running terminal. Otherwise you can open a new terminal in the project folder and run the command: docker compose down. 
+   If you want a whole reset of the application please run the command docker compose down -v. 
    (Warning: This deletes the database and everythinf in it.)
 
 6. Technical Notes: 
