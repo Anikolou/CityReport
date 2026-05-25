@@ -1,7 +1,34 @@
-    <?php
+<?php
         //Το ίδιο και με το index.php
         require_once 'create_db.php';
         require_once 'get_badge_class.php';
+
+
+        //Τρόπος για να χειριστούμε την αναζήτηση ενός συγκεκριμένου ticket μέσω του ID του. Ελέγχουμε αν υπάρχει το GET parameter 'ticket_search' και αν δεν είναι κενό. 
+        //Αν ισχύει, ανακατευθύνουμε τον χρήστη στη σελίδα more.php με το αντίστοιχο ticket_id.
+        // Ορίζουμε μια κενή μεταβλητή για το σφάλμα
+        $search_error = ''; 
+
+        if (isset($_GET['ticket_search']) && trim($_GET['ticket_search']) !== '') {
+            $search_id = trim($_GET['ticket_search']); 
+
+            // Ρωτάμε τη βάση αν υπάρχει αυτό το ticket_id
+            $check_stmt = $pdo->prepare("SELECT ticket_id FROM issues WHERE ticket_id = :id");
+            $check_stmt->execute([':id' => $search_id]);
+
+            // 2. Ελέγχουμε πόσες γραμμές βρήκε
+            if ($check_stmt->rowCount() > 0) {
+                // Υπάρχει! Κάνουμε την ανακατεύθυνση κανονικά
+                header("Location: more.php?ticket_id=" . urlencode($search_id));
+                exit; 
+            } else {
+                // Δεν υπάρχει! Ορίζουμε το μήνυμα λάθους
+                $search_error = "Το Ticket ID <strong>" . htmlspecialchars($search_id) . "</strong> δεν βρέθηκε. Δοκιμάστε ξανά.";
+            }
+}
+?>
+
+<?php
 
         //εισάγουμε το πάνω navigation menu της αρχικής σελίδας index.php
         echo '<!DOCTYPE html>';
@@ -48,7 +75,29 @@
 
         echo '<div class="container mb-5 flex-grow-1">';
         echo '<h2 class="mb-4 border-bottom pb-2">Αναφερόμενα Προβλήματα</h2>';
-        
+?>
+
+        <!-- Φόρμα μέσω της οποίας μπορεί ο χρήστης να αναζητήσει ένα συγκεκριμένο ticket μέσω του ID του. Στέλνει το αίτημα στο ίδιο αρχείο (browse.php) με μέθοδο GET. -->
+
+        <form method="GET" action="browse.php" class="bg-white p-4 shadow-sm rounded border mb-4">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-9">
+                    <label for="ticket_search" class="form-label small fw-bold text-muted mb-1">Αναζήτηση με Ticket ID</label>
+                    <input type="text" name="ticket_search" id="ticket_search" class="form-control form-control-sm" placeholder="π.χ. KOROPI-00001" required>
+                </div>
+                <div class="col-md-3 d-grid">
+                    <button type="submit" class="btn btn-sm btn-primary">Αναζήτηση</button>
+                </div>
+            </div>
+
+            <?php if (!empty($search_error)): ?>
+                <div class="alert alert-danger mt-3 mb-0 py-2 small">
+                    <?= $search_error ?>
+                </div>
+            <?php endif; ?>
+        </form>
+
+<?php
         // Αλλάζουμε το Grid σε col-12 col-lg-6 
         echo '<div class="row g-4">';
 
