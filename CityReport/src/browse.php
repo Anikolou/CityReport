@@ -1,7 +1,83 @@
-    <?php
+<?php
         //Το ίδιο και με το index.php
         require_once 'create_db.php';
         require_once 'get_badge_class.php';
+
+
+        //Τρόπος για να χειριστούμε την αναζήτηση ενός συγκεκριμένου ticket μέσω του ID του. Ελέγχουμε αν υπάρχει το GET parameter 'ticket_search' και αν δεν είναι κενό. 
+        //Αν ισχύει, ανακατευθύνουμε τον χρήστη στη σελίδα more.php με το αντίστοιχο ticket_id.
+        // Ορίζουμε μια κενή μεταβλητή για το σφάλμα
+        $search_error = ''; 
+
+        if (isset($_GET['ticket_search']) && trim($_GET['ticket_search']) !== '') {
+            $search_id = trim($_GET['ticket_search']); 
+
+            // Ρωτάμε τη βάση αν υπάρχει αυτό το ticket_id
+            $check_stmt = $pdo->prepare("SELECT ticket_id FROM issues WHERE ticket_id = :id");
+            $check_stmt->execute([':id' => $search_id]);
+
+            // 2. Ελέγχουμε πόσες γραμμές βρήκε
+            if ($check_stmt->rowCount() > 0) {
+                // Υπάρχει! Κάνουμε την ανακατεύθυνση κανονικά
+                header("Location: more.php?ticket_id=" . urlencode($search_id));
+                exit; 
+            } else {
+                // Δεν υπάρχει! Ορίζουμε το μήνυμα λάθους
+                $search_error = "Το Ticket ID <strong>" . htmlspecialchars($search_id) . "</strong> δεν βρέθηκε. Δοκιμάστε ξανά.";
+            }
+        }
+
+        $cat_stmt = $pdo->query("SELECT category_id, name FROM categories ORDER BY name ASC");
+        $all_categories = $cat_stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Διαβάζουμε τι επέλεξε ο χρήστης (αν δεν επέλεξε κάτι, η προεπιλογή είναι 'all' ή 'desc')
+        $selected_category = isset($_GET['category']) ? $_GET['category'] : 'all';
+        $selected_status = isset($_GET['status']) ? $_GET['status'] : 'all';
+        $sort_date = isset($_GET['sort']) ? $_GET['sort'] : 'desc';
+
+        // Ξεκινάμε να "χτίζουμε" τη βασική εντολή SQL
+        $sql = "SELECT issues.*, categories.name AS category_name 
+                FROM issues 
+                JOIN categories ON issues.category_id = categories.category_id";
+
+        // Εδώ θα μαζέψουμε τα κομμάτια για το "WHERE" (τα φίλτρα)
+        $where_clauses = [];
+        $params = [];
+
+        // Έλεγχος Κατηγορίας
+        if ($selected_category !== 'all') {
+            $where_clauses[] = "issues.category_id = :cat_id";
+            $params[':cat_id'] = $selected_category;
+        }
+
+        // Έλεγχος Κατάστασης
+        if ($selected_status !== 'all') {
+            if ($selected_status === 'Υποβλήθηκε') {
+                $where_clauses[] = "(issues.status = :status OR issues.status IS NULL OR issues.status = '')";
+            } else {
+                $where_clauses[] = "issues.status = :status";
+            }
+            $params[':status'] = $selected_status;
+        }
+
+        // Αν ο χρήστης έχει επιλέξει έστω και ένα φίλτρο, τα ενώνουμε με "AND" και τα κολλάμε στο $sql
+        if (count($where_clauses) > 0) {
+            $sql .= " WHERE " . implode(" AND ", $where_clauses);
+        }
+
+        // Τέλος, προσθέτουμε την ταξινόμηση (Πιο πρόσφατα / Πιο παλιά)
+        if ($sort_date === 'asc') {
+            $sql .= " ORDER BY issues.created_at ASC";
+        } else {
+            $sql .= " ORDER BY issues.created_at DESC";
+        }
+
+        // Εκτελούμε το τελικό, δυναμικό ερώτημα!
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+?>
+
+<?php
 
         //εισάγουμε το πάνω navigation menu της αρχικής σελίδας index.php
         echo '<!DOCTYPE html>';
@@ -40,15 +116,79 @@
         echo '</div>'; //κλείνει το container
         echo '</nav>'; //κλείνει το nav
 
-        $sql = "SELECT issues.*, categories.name AS category_name 
-                FROM issues JOIN categories ON issues.category_id = categories.category_id
-                ORDER BY issues.upvotes DESC, issues.created_at DESC";
-        
-        $stmt = $pdo->query($sql);
+        //Έχω αφαιρέσει το προηγούμενο sql query για να συμβαδίζει με τα νέα φίλτρα που προσθέσαμε. 
+        //Τώρα το $stmt περιέχει το αποτέλεσμα του δυναμικού ερωτήματος που φτιάξαμε παραπάνω, το οποίο λαμβάνει υπόψη τα φίλτρα.
 
         echo '<div class="container mb-5 flex-grow-1">';
         echo '<h2 class="mb-4 border-bottom pb-2">Αναφερόμενα Προβλήματα</h2>';
-        
+?>
+
+        <!-- Φόρμα μέσω της οποίας μπορεί ο χρήστης να αναζητήσει ένα συγκεκριμένο ticket μέσω του ID του. Στέλνει το αίτημα στο ίδιο αρχείο (browse.php) με μέθοδο GET. -->
+
+        <form method="GET" action="browse.php" class="bg-white p-4 shadow-sm rounded border mb-4">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-9">
+                    <label for="ticket_search" class="form-label small fw-bold text-muted mb-1">Αναζήτηση με Ticket ID</label>
+                    <input type="text" name="ticket_search" id="ticket_search" class="form-control form-control-sm" placeholder="π.χ. KOROPI-00001" required>
+                </div>
+                <div class="col-md-3 d-grid">
+                    <button type="submit" class="btn btn-sm btn-primary">Αναζήτηση</button>
+                </div>
+            </div>
+
+            <?php if (!empty($search_error)): ?>
+                <div class="alert alert-danger mt-3 mb-0 py-2 small">
+                    <?= $search_error ?>
+                </div>
+            <?php endif; ?>
+        </form>
+
+
+        <!-- Φόρμα για φιλτράρισμα προβλημάτων με βάση κατηγορία, κατάσταση και ημερομηνία. Στέλνει το αίτημα στο ίδιο αρχείο (browse.php) με μέθοδο GET. -->
+        <form method="GET" action="browse.php" class="bg-white p-4 shadow-sm rounded border mb-4">
+            <h6 class="mb-3 text-secondary fw-bold border-bottom pb-2">Φιλτράρισμα Προβλημάτων</h6>
+            <div class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label for="category" class="form-label small fw-bold text-muted mb-1">Κατηγορία</label>
+                    <select name="category" id="category" class="form-select form-select-sm">
+                        <option value="all">Όλες</option>
+                        <!-- Εδώ κάνουμε loop σε όλες τις κατηγορίες που έχουμε τραβήξει από τη βάση και τις εμφανίζουμε ως επιλογές στο dropdown. -->
+                        <!-- Αν κάποια κατηγορία είναι αυτή που έχει επιλέξει ο χρήστης, την κάνουμε "selected" για να φαίνεται η επιλογή του. -->
+                        <?php foreach($all_categories as $cat): ?>
+                            <option value="<?= htmlspecialchars($cat['category_id']) ?>" <?= ($selected_category == $cat['category_id']) ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($cat['name']) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                
+                <div class="col-md-3">
+                    <label for="status" class="form-label small fw-bold text-muted mb-1">Κατάσταση</label>
+                    <select name="status" id="status" class="form-select form-select-sm">
+                        <!-- Εδώ κάνουμε loop σε όλες τις καταστάσεις που έχουμε τραβήξει από τη βάση και τις εμφανίζουμε ως επιλογές στο dropdown. -->
+                        <!-- Αν κάποια κατάσταση είναι αυτή που έχει επιλέξει ο χρήστης, την κάνουμε "selected" για να φαίνεται η επιλογή του. -->
+                        <option value="all">Όλες</option>
+                        <option value="Υποβλήθηκε" <?= ($selected_status == 'Υποβλήθηκε') ? 'selected' : '' ?>>Υποβλήθηκε</option>
+                        <option value="Σε Εξέλιξη" <?= ($selected_status == 'Σε Εξέλιξη') ? 'selected' : '' ?>>Σε Εξέλιξη</option>
+                        <option value="Επιλύθηκε" <?= ($selected_status == 'Επιλύθηκε') ? 'selected' : '' ?>>Επιλύθηκε</option>
+                    </select>
+                </div>
+                
+                <div class="col-md-3">
+                    <label for="sort" class="form-label small fw-bold text-muted mb-1">Ημερομηνία</label>
+                    <select name="sort" id="sort" class="form-select form-select-sm">
+                        <option value="desc" <?= ($sort_date == 'desc') ? 'selected' : '' ?>>Πιο πρόσφατα πρώτα</option>
+                        <option value="asc" <?= ($sort_date == 'asc') ? 'selected' : '' ?>>Πιο παλιά πρώτα</option>
+                    </select>
+                </div>
+                
+                <div class="col-md-3 d-grid">
+                    <button type="submit" class="btn btn-sm btn-primary">Εφαρμογή Φίλτρων</button>
+                </div>
+            </div>
+        </form>
+
+<?php
         // Αλλάζουμε το Grid σε col-12 col-lg-6 
         echo '<div class="row g-4">';
 
