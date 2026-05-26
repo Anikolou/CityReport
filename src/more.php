@@ -148,7 +148,7 @@
 
             <div style="" class="col-lg-4 text-end d-flex justify-content-between align-items-center">
                 <span class="text-muted small fw-bold fs-6">#<?= htmlspecialchars($issue['ticket_id']) ?></span>
-                <span class="badge bg-info fs-6  <?= $badge_css_class ?>"><?= htmlspecialchars($current_status) ?></span>
+                <span class="fs-6 badge <?= $badge_css_class ?> mb-1"><?= htmlspecialchars($current_status) ?></span>
                 <button class="fs-6 btn btn-sm <?= htmlspecialchars($btn_class) ?> upvote_button" data-ticket="<?= htmlspecialchars($ticket_id) ?>" <?= htmlspecialchars($disabled_attribute) ?>>
                     <span class="vote-icon">👍</span>
                     <span class="vote-count fw-bold"><?= htmlspecialchars($issue['upvotes']) ?></span>
