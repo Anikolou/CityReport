@@ -37,4 +37,4 @@ Docker and docker compose installed into your system.
 7. Important note: 
    Please wait a few seconds (about 10-15) for the database to be fully initialized and set up and for the rights.sh script to have finished executing. This ensures everything is ready and prevents any connection errors.
 
-Author: Anastasis Nikolou, George Tsogkas 
+Author: Anastasis Nikolou, George Tsogkas and mplaaa
