@@ -64,5 +64,44 @@
     border: 1px solid #e5e7eb;
 }
 
+/* Το μαύρο ημιδιαφανές φόντο που θα καλύψει την οθόνη όταν θα πετάγεται το window της φωτογραφίας στο browse.php */
+.custom-window-background{
+    position: fixed;
+    display: none;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.85); /* Σκούρο ημιδιαφανές */
+    justify-content: center;
+    align-items: center;
+}
 
+.custom-window img {
+    max-width: 90%;
+    max-height: 90vh; /* Μέχρι το 90% του ύψους της οθόνης */
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    object-fit: contain; /* Κρατάει τις σωστές αναλογίες της εικόνας */
+}
+
+/*Για το κουμπί κλεισίματος του pop-up window */
+#custom-window-close {
+    top: 20px;
+    right: 35px;
+    color: white;
+    font-size: 40px;
+    font-weight: bold;
+    position: absolute;
+    cursor: pointer;
+}
+
+/*Το exit button στην αρχή είναι γκρί και όταν ο χρήστης βάζει το ποντίκι του από πανω γίνεται λευκό*/
+#custom-window-close:hover {
+    color: #ccc;
+}
+
+.modal-success h2 { color: #198754; } /* Πράσινο */
+.modal-success .btn-back { background-color: #198754; }
+
+.modal-error h2 { color: #dc3545; } /* Κόκκινο */
+.modal-error .btn-back { background-color: #dc3545; }
 

@@ -202,11 +202,10 @@
 
             //Παίρνουμε το status για κάθε αναφορά για να το χρησιμοποιήσουμε στην get_badge_class
             if (!empty($row['status'])) {
-            $current_status = $row['status'];
+                $current_status = $row['status'];
             } else {
-            $current_status = 'Υποβλήθηκε';
+                $current_status = 'Υποβλήθηκε';
             }
-        
 
             if ($has_voted) {
                 $btn_class = 'btn-secondary'; 
@@ -224,99 +223,46 @@
 
             // Κεντρικό Grid Column (col-lg-6 για 2 ανά σειρά)
             echo '<div class="col-12 col-lg-6">';
-            echo '<div class="card h-100 shadow-sm border-0">';
+            echo '<div class="card h-100 shadow-sm border-0 d-flex flex-column">';
 
-            if ($has_image) {
-                // Layout Α: Υπάρχει φωτογραφία (Οριζόντιο)
-                echo '<div class="row g-0 flex-grow-1">'; // Χρησιμοποιούμε Row g-0 για να ενώσουμε στοιχεία
-                
-                // 1. Δεξί κομμάτι: Η Φωτογραφία (Order-md-2 την πάει δεξιά)
-                echo '<div class="col-md-4 order-md-2 p-3 d-flex align-items-center justify-content-center">';
-                //Είναι καλή πρακτική να χρησιμοποιούμε την μέθοδο htmlspecialchars() για αποφυγή αππρόσμενων errors με τα photo paths
-                echo '  <img src="' . htmlspecialchars($image_path) . '" class="img-fluid rounded shadow-sm" style="object-fit: cover; height: 100%; width: 100%;" alt="Φωτογραφία προβλήματος">';
-                echo '</div>';
+            echo '<div class="card-header bg-white d-flex justify-content-between align-items-center border-bottom-0">';
+            echo '<span class="badge bg-primary">'.htmlspecialchars($row['category_name']).'</span>';
+            $date_format = date('d/m/Y', strtotime($row['created_at']));
+            echo '<small class="text-muted">'.$date_format.'</small>';
+            echo '</div>';
 
-                // 2. Αριστερό κομμάτι: Τα Στοιχεία 
-                echo '<div class="col-md-8 order-md-1 d-flex flex-column border-end">';
-                    
-                    // Header (Κατηγορία & Ημερομηνία)
-                    echo '<div class="card-header bg-white d-flex justify-content-between align-items-center border-bottom-0">';
-                    echo '  <span class="badge bg-primary">'.htmlspecialchars($row['category_name']).'</span>';
-                    $date_format = date('d/m/Y', strtotime($row['created_at']));
-                    echo '  <small class="text-muted">'.$date_format.'</small>';
-                    echo '</div>';
+            echo '<div class="card-body flex-grow-1">';
+            echo '<h5 class="card-title">'.htmlspecialchars($row['title']).'</h5>';
+            echo '<p class="card-text text-secondary small">' . htmlspecialchars($row['description']) . '</p>';
+            echo '<p class="card-text"><small class="text-muted"><strong>Τοποθεσία:</strong> ' . htmlspecialchars($row['address']) . '</small></p>';
+            echo '</div>';
 
-                    // Body (Τίτλος, Περιγραφή, Τοποθεσία)
-                    echo '<div class="card-body flex-grow-1">';
-                    echo '  <h5 class="card-title">'.htmlspecialchars($row['title']).'</h5>';
-                    echo '  <p class="card-text text-secondary small">' . htmlspecialchars($row['description']) . '</p>';
-                    echo '  <p class="card-text"><small class="text-muted"><strong>Τοποθεσία:</strong> ' . htmlspecialchars($row['address']) . '</small></p>';
-                    echo '</div>';
-
-                    // Footer 
-                    echo '<div class="card-footer bg-white d-flex justify-content-between align-items-center border-top-0 mt-auto">';
-                    echo '  <div class="d-flex flex-column align-items-center">'; 
-                    //Χρησιμοποιείται η get_badge_class για να αποφασίσουμε με τι style θα εμφανιστεί το badge που υποδεικνύει την κατάσταση της αναφοράς του issue
-                    $badge_css_class = get_badge_class($current_status);
-                    echo '<span class="badge ' . $badge_css_class . ' mb-1">' . htmlspecialchars($current_status) . '</span>';
-                    echo '    <small class="text-muted fw-bold">#' . $ticket_id . '</small>';
-                    echo '  </div>';
-                    echo '  <div class="d-flex align-items-center gap-2">';
-                    echo '    <button class="btn btn-sm ' . $btn_class . ' upvote_button" data-ticket="' . $ticket_id . '" ' . $disabled_attribute . '>';
-                    echo '      <span class="vote-icon">👍</span> ';
-                    echo '      <span class="vote-count fw-bold">' . $row['upvotes'] . '</span>';
-                    echo '    </button>';
-        
-                    // ΠΡΟΣΘΗΚΗ ΚΟΥΜΠΙΟΥ ΓΙΑ ΤΟ COLLAPSE 
-                    if ($has_image) {
-                        echo '<button class="btn btn-sm btn-info" type="button" data-bs-toggle="collapse" data-bs-target="#photoCollapse_' . $ticket_id . '" aria-expanded="false" aria-controls="photoCollapse_' . $ticket_id . '">Προβολή Φωτογραφίας</button>';
-                    }
-
-                    //Χρησιμοποιώ την default κλάση από τα badges στο style.css (ανακυκλώνω κώδικα!)
-                    echo '<button class="btn btn-sm default" type="button" onclick="window.location.href=\'more.php?ticket_id=' . $ticket_id . '\'">Προβολή Λεπτομερειών!</button>';
-                    echo '  </div>'; // κλείνει το d-flex των κουμπιών
-                    echo '</div>'; // κλείνει το footer
-                echo '</div>'; // κλείνει το col-md-8
-                echo '</div>'; // κλείνει το row g-0
-
-            } else {
-                // Layout Β: ΔΕΝ υπάρχει φωτογραφία 
-                echo '<div class="card-header">';
-                echo '<span class="badge bg-primary">'.htmlspecialchars($row['category_name']).'</span>';
-                $date_format = date('d/m/Y', strtotime($row['created_at']));
-                echo '<small class="text-muted">'.$date_format.'</small>';
-                echo '</div>';
-
-                echo '<div class="card-body">';
-                echo '<h4 class="card-title">'.htmlspecialchars($row['title']).'</h4>';
-                echo '<p class="card-text text-secondary">' . htmlspecialchars($row['description']) . '</p>';
-                echo '<p class="card-text"><small class="text-muted"><strong>Τοποθεσία:</strong> ' . htmlspecialchars($row['address']) . '</small></p>';
-                echo '</div>';
-
-                echo '<div class="card-footer bg-white d-flex justify-content-between align-items-center border-top-0">';
-                echo '<div class="d-flex flex-column">';
-                $current_status = !empty($row['status']) ? $row['status'] : 'Υποβλήθηκε';
-                //Χρησιμοποιείται η get_badge_class για να αποφασίσουμε με τι style θα εμφανιστεί το badge που υποδεικνύει την κατάσταση της αναφοράς του issue
-                $badge_css_class = get_badge_class($current_status);
-                echo '<span class="badge ' . $badge_css_class . ' mb-1">' . htmlspecialchars($current_status) . '</span>';
-                echo '<small class="text-muted fw-bold">#' . $ticket_id . '</small>';
-                echo '</div>';
-
-                echo '<button class="btn btn-sm ' . $btn_class . ' upvote_button" data-ticket="' . $ticket_id . '" ' . $disabled_attribute . '>';
-                echo '<span class="vote-icon">👍</span> ';
-                echo '<span class="vote-count fw-bold">' . $row['upvotes'] . '</span>';
-                echo '</button>';
-                //Χρησιμοποιώ την default κλάση από τα badges στο style.css (ανακυκλώνω κώδικα!)
-                echo '<button class="btn btn-sm default" type="button" onclick="window.location.href=\'more.php?ticket_id=' . $ticket_id . '\'">Προβολή Λεπτομερειών!</button>';
-                echo '</div>'; // κλείνει το card-footer
-            }
+            echo '<div class="card-footer bg-white d-flex justify-content-between align-items-center border-top-0 mt-auto pb-3">';
             
+            echo '<div class="d-flex flex-column align-items-center">';
+            //Χρησιμοποιείται η get_badge_class για να αποφασίσουμε με τι style θα εμφανιστεί το badge που υποδεικνύει την κατάσταση της αναφοράς του issue
+            $badge_css_class = get_badge_class($current_status);
+            echo '<span class="badge ' . $badge_css_class . ' mb-1">' . htmlspecialchars($current_status) . '</span>';
+            echo '<small class="text-muted fw-bold">#' . $ticket_id . '</small>';
+            echo '</div>';
+
+            echo '<div class="d-flex align-items-center gap-2">';
+            echo '<button class="btn btn-sm ' . $btn_class . ' upvote_button" data-ticket="' . $ticket_id . '" ' . $disabled_attribute . '>';
+            echo '<span class="vote-icon">👍</span> ';
+            echo '<span class="vote-count fw-bold">' . $row['upvotes'] . '</span>';
+            echo '</button>';
+
+            // ΠΡΟΣΘΗΚΗ ΚΟΥΜΠΙΟΥ ΓΙΑ ΕΜΦΑΝΙΣΗ ΤΗΣ ΦΩΤΟΓΡΑΦΙΑΣ
+            // ΠΡΟΣΘΕΤΟΥΜΕ ΚΑΙ ΤΟ PHOTO_PATH ΑΠΟ ΤΗΝ DB ΓΙΑΤΙ ΤΟ ΧΡΕΙΑΖΟΜΑΣΤΕ ΣΤΗΝ js του κουμπιου
             if ($has_image) {
-                // Το βάζουμε στο τέλος της κάρτας, μετά το footer.
-                echo '<div class="collapse p-3" id="photoCollapse_' . $ticket_id . '">';
-                echo '  <img src="' . htmlspecialchars($image_path) . '" class="img-fluid rounded shadow-sm" alt="Φωτογραφία προβλήματος">';
-                echo '</div>';
+                echo '<button class="btn btn-sm btn-info custom-popup-btn" type="button"  data-image-src="' . htmlspecialchars($image_path) . '">Προβολή Φωτογραφίας</button>';
             }
+
+            //Χρησιμοποιώ την default κλάση από τα badges στο style.css (ανακυκλώνω κώδικα!)
+            echo '<button class="btn btn-sm default" type="button" onclick="window.location.href=\'more.php?ticket_id=' . $ticket_id . '\'">Προβολή Λεπτομερειών!</button>';
+            
+            echo '</div>'; // κλείνει το d-flex των κουμπιών
+            echo '</div>'; // κλείνει το card-footer
 
             echo '</div>'; // Κλείνει το card
             echo '</div>'; // Κλείνει το col-12 col-lg-6
@@ -324,6 +270,13 @@
 
         echo '</div>'; // κλείνει το row g-4
         echo '</div>'; // κλείνει το container mb-5
+
+        //Η html για το window που θα εμφανίζεται οταν ο χρήστης πατήσει το κουμπί για προεπισκόπηση της φωτογραφίας
+        // Τοποθετημένο ΜΙΑ ΦΟΡΑ, έξω από το while loop!
+        echo '<div id="custom-image-window" class="custom-window-background">';
+        echo '<span id="custom-window-close">&times;</span>';
+        echo '<img id="custom-window-img" src="" alt="Προβολή Φωτογραφίας">';
+        echo '</div>';
 
         // Εισαγωγή του footer από το αρχείο index.php
         echo ' <footer class="bg-dark text-white pt-5 pb-5 mt-5">
@@ -361,7 +314,8 @@
         echo '<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>'; 
         echo '<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>'; 
         echo '<script src="mapFooter.js"></script>';  
-        echo '<script src="upvotes.js"></script>'; 
+        echo '<script src="upvotes.js"></script>';
+        echo '<script src="photo_window.js"></script>'; 
 
         echo '</body>';
         echo '</html>';
