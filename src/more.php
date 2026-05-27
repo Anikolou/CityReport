@@ -3,6 +3,18 @@
     require_once 'create_db.php';
     require_once 'get_badge_class.php';
 
+    //Ελέγχουμε τα cookies του χρήστη για να δοπυμε αν ο user είναι συνδεδεμένος σαν admin
+    //Aν ναι, τραβάμε το όνομά του για να το εμφανίσουμε στο navbar
+    $logged_in_admin = null;
+
+    if (isset($_COOKIE['admin_token'])) {
+        $stmt = $pdo->prepare("SELECT full_name FROM admins WHERE remember_token = :token");
+        $stmt->execute([':token' => $_COOKIE['admin_token']]);
+        $logged_in_admin = $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+    
+    
+
     if (!isset($_GET['ticket_id']) || trim($_GET['ticket_id']) === '') {
         // Αν κάποιος μπει στο more.php χωρίς ID, τον στέλνουμε πίσω
         header("Location: browse.php");
@@ -132,11 +144,29 @@
                 <li class="nav-item"><a class="nav-link" href="index.php">Αναφορά Προβλήματος</a></li>
                 <li class="nav-item"><a class="nav-link" href="browse.php">Προβολή Προβλημάτων</a></li>
             </ul>
-          </div>';
-    echo '</div>';
-    echo '</nav>';
+            <ul class="navbar-nav">
+                <li class="nav-item">';
+?>                    
+                    <!-- Εμφάνιση διαφορετικών επιλογών στο navbar ανάλογα με το αν ο admin είναι συνδεδεμένος ή όχι -->
+                    <?php if ($logged_in_admin): ?>
+                        <li class="nav-item">
+                            <a class="nav-link text-info fw-bold" href="admin-dashboard.php">Γεια σας, <?= htmlspecialchars($logged_in_admin['full_name']) ?></a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-danger" href="logout.php">Αποσύνδεση</a>
+                        </li>
+                    <?php else: ?>
+                        <li class="nav-item">
+                            <a class="nav-link" href="login.php">Σύνδεση Διαχειριστή</a>
+                        </li>
+                    <?php endif;?>
+</li>
+</ul>          
+</div>
+</div>
+</nav>
 
-?>
+
 
     <div class="container mb-5 flex-grow-1">
         <a href="browse.php" class="btn btn-outline-secondary btn-sm mb-4">Επιστροφή στη λίστα</a>
@@ -203,7 +233,7 @@
             </div>
         </div>
     </div>
-
+<div class="container">
     <div class="row mt-5 mb-5">
         <div class="col-12">
             <div class="card shadow-sm border-0 border-top border-primary border-4 rounded-3">
@@ -256,6 +286,7 @@
             </div>
         </div>
     </div>
+</div>
     
 
     <script>

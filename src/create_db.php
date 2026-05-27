@@ -45,7 +45,7 @@
             );
 
             INSERT IGNORE INTO admins (admin_id, username, password_hash, full_name, email) 
-            VALUES (1, 'admin', '\$2y\$10\$T81r/hR21lUfWqDk00m7c.nO7B2C7F1p8JzF.k4gL2T8Y9q1y3W2O', 'Admin User', 'admin@example.com');
+            VALUES (1, 'admin', '\$2y\$10\$VuSbKde3Xt5/lXLkTGd4Vuh45oq/qpPlSH6s8ob5UutkIcHLsKb3y', 'Admin User', 'admin@example.com');
         ";
         
         $pdo->exec($createAdminsTable);

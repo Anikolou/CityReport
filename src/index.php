@@ -1,6 +1,16 @@
 <?php
-//Κατά την εκκίνηση της αρχικής σελίδας ελέγχεται αν υπάρχει η βάση δεδομένων και αν δεν υπάρχει δημιουργείται
+    //Κατά την εκκίνηση της αρχικής σελίδας ελέγχεται αν υπάρχει η βάση δεδομένων και αν δεν υπάρχει δημιουργείται
     require_once 'create_db.php';
+
+    //Ελέγχουμε τα cookies του χρήστη για να δοπυμε αν ο user είναι συνδεδεμένος σαν admin
+    //Aν ναι, τραβάμε το όνομά του για να το εμφανίσουμε στο navbar
+    $logged_in_admin = null;
+
+    if (isset($_COOKIE['admin_token'])) {
+        $stmt = $pdo->prepare("SELECT full_name FROM admins WHERE remember_token = :token");
+        $stmt->execute([':token' => $_COOKIE['admin_token']]);
+        $logged_in_admin = $stmt->fetch(PDO::FETCH_ASSOC);
+    }
 ?>
 <!DOCTYPE html>
 <html lang="el">
@@ -33,7 +43,20 @@
                 </ul>
                 <ul class="navbar-nav">
                     <li class="nav-item">
-                        <a class="nav-link" href="login.php">Σύνδεση Διαχειριστή</a>
+                        
+                        <!-- Εμφάνιση διαφορετικών επιλογών στο navbar ανάλογα με το αν ο admin είναι συνδεδεμένος ή όχι -->
+                        <?php if ($logged_in_admin): ?>
+                            <li class="nav-item">
+                                <a class="nav-link text-info fw-bold" href="admin-dashboard.php">Γεια σας, <?= htmlspecialchars($logged_in_admin['full_name']) ?></a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-danger" href="logout.php">Αποσύνδεση</a>
+                            </li>
+                        <?php else: ?>
+                            <li class="nav-item">
+                                <a class="nav-link" href="login.php">Σύνδεση Διαχειριστή</a>
+                            </li>
+                        <?php endif; ?>
                     </li>
                 </ul>
             </div>

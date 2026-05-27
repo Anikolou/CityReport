@@ -3,6 +3,19 @@
         require_once 'create_db.php';
         require_once 'get_badge_class.php';
 
+        
+        //Ελέγχουμε τα cookies του χρήστη για να δοπυμε αν ο user είναι συνδεδεμένος σαν admin
+        //Aν ναι, τραβάμε το όνομά του για να το εμφανίσουμε στο navbar
+        $logged_in_admin = null;
+
+        if (isset($_COOKIE['admin_token'])) {
+            $stmt = $pdo->prepare("SELECT full_name FROM admins WHERE remember_token = :token");
+            $stmt->execute([':token' => $_COOKIE['admin_token']]);
+            $logged_in_admin = $stmt->fetch(PDO::FETCH_ASSOC);
+        }
+
+
+
 
         //Τρόπος για να χειριστούμε την αναζήτηση ενός συγκεκριμένου ticket μέσω του ID του. Ελέγχουμε αν υπάρχει το GET parameter 'ticket_search' και αν δεν είναι κενό. 
         //Αν ισχύει, ανακατευθύνουμε τον χρήστη στη σελίδα more.php με το αντίστοιχο ticket_id.
@@ -106,22 +119,35 @@
                         <li class="nav-item">
                             <a class="nav-link active" aria-current="page" href="browse.php">Προβολή Προβλημάτων</a>
                         </li>
-                    </ul>';
-        echo        '<ul class="navbar-nav">
+                    </ul>
+                    <ul class="navbar-nav">
+                <li class="nav-item">';
+?>                    
+                    <!-- Εμφάνιση διαφορετικών επιλογών στο navbar ανάλογα με το αν ο admin είναι συνδεδεμένος ή όχι -->
+                    <?php if ($logged_in_admin): ?>
+                        <li class="nav-item">
+                            <a class="nav-link text-info fw-bold" href="admin-dashboard.php">Γεια σας, <?= htmlspecialchars($logged_in_admin['full_name']) ?></a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-danger" href="logout.php">Αποσύνδεση</a>
+                        </li>
+                    <?php else: ?>
                         <li class="nav-item">
                             <a class="nav-link" href="login.php">Σύνδεση Διαχειριστή</a>
                         </li>
-                    </ul>';            
-        echo '</div>'; //κλείνει το navbarNav
-        echo '</div>'; //κλείνει το container
-        echo '</nav>'; //κλείνει το nav
+                    <?php endif;?>
+                </li>
+            </ul> 
+                   
+        </div> <!-- κλείνει το navbarNav -->
+    </div> <!-- κλείνει το container -->
+</nav><!-- κλείνει το nav -->
 
-        //Έχω αφαιρέσει το προηγούμενο sql query για να συμβαδίζει με τα νέα φίλτρα που προσθέσαμε. 
-        //Τώρα το $stmt περιέχει το αποτέλεσμα του δυναμικού ερωτήματος που φτιάξαμε παραπάνω, το οποίο λαμβάνει υπόψη τα φίλτρα.
+        <!-- Έχω αφαιρέσει το προηγούμενο sql query για να συμβαδίζει με τα νέα φίλτρα που προσθέσαμε. -->
+        <!-- Τώρα το $stmt περιέχει το αποτέλεσμα του δυναμικού ερωτήματος που φτιάξαμε παραπάνω, το οποίο λαμβάνει υπόψη τα φίλτρα. -->
 
-        echo '<div class="container mb-5 flex-grow-1">';
-        echo '<h2 class="mb-4 border-bottom pb-2">Αναφερόμενα Προβλήματα</h2>';
-?>
+<div class="container mb-5 flex-grow-1">
+        <h2 class="mb-4 border-bottom pb-2">Αναφερόμενα Προβλήματα</h2>
 
         <!-- Φόρμα μέσω της οποίας μπορεί ο χρήστης να αναζητήσει ένα συγκεκριμένο ticket μέσω του ID του. Στέλνει το αίτημα στο ίδιο αρχείο (browse.php) με μέθοδο GET. -->
 
