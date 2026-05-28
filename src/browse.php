@@ -126,10 +126,10 @@
                     <!-- Εμφάνιση διαφορετικών επιλογών στο navbar ανάλογα με το αν ο admin είναι συνδεδεμένος ή όχι -->
                     <?php if ($logged_in_admin): ?>
                         <li class="nav-item">
-                            <a class="nav-link text-info fw-bold" href="admin-dashboard.php">Γεια σας, <?= htmlspecialchars($logged_in_admin['full_name']) ?></a>
+                            <a class="nav-link" href="admin-dashboard.php">Γεια σας, <?= htmlspecialchars($logged_in_admin['full_name']) ?></a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-danger" href="logout.php">Αποσύνδεση</a>
+                            <a class="nav-link" href="logout.php">Αποσύνδεση</a>
                         </li>
                     <?php else: ?>
                         <li class="nav-item">
