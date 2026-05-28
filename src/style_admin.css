@@ -1,0 +1,35 @@
+/* Admin CSS */
+        body {
+            background-color: #f4f7fa; 
+        }
+        .dashboard-card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s ease-in-out;
+            background-color: #ffffff;
+        }
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+        }
+        .icon-box {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            font-size: 1.8rem;
+        }
+        .bg-light-primary { background-color: #e0f2fe; color: #0284c7; }
+        .bg-light-success { background-color: #dcfce7; color: #16a34a; }
+        
+        .list-group-item {
+            border-left: none;
+            border-right: none;
+            border-top: none;
+            padding: 1rem 1.25rem;
+        }
+        .list-group-item:last-child {
+            border-bottom: none;
+        }

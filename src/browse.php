@@ -4,7 +4,7 @@
         require_once 'get_badge_class.php';
 
         
-        //Ελέγχουμε τα cookies του χρήστη για να δοπυμε αν ο user είναι συνδεδεμένος σαν admin
+        //Ελέγχουμε τα cookies του χρήστη για να δουμε αν ο user είναι συνδεδεμένος σαν admin
         //Aν ναι, τραβάμε το όνομά του για να το εμφανίσουμε στο navbar
         $logged_in_admin = null;
 
@@ -14,7 +14,7 @@
             $logged_in_admin = $stmt->fetch(PDO::FETCH_ASSOC);
         }
 
-
+        //Γενικά είναι καλύτερο να ελέγχουμε αν ο χρήστης είναι ο admin μέσω των cookies γιατί είναι κρυφά. Θα μπορούσαμε να κάνουμε GET στο URL με status admin αλλά τότε θα μπορούσε να δει ο καθένας ποιος είναι ο admin
 
 
         //Τρόπος για να χειριστούμε την αναζήτηση ενός συγκεκριμένου ticket μέσω του ID του. Ελέγχουμε αν υπάρχει το GET parameter 'ticket_search' και αν δεν είναι κενό. 
@@ -47,6 +47,8 @@
         $selected_category = isset($_GET['category']) ? $_GET['category'] : 'all';
         $selected_status = isset($_GET['status']) ? $_GET['status'] : 'all';
         $sort_date = isset($_GET['sort']) ? $_GET['sort'] : 'desc';
+        //Διαβάζουμε αν επέλεξε ο χρήστης (μόνο για τον admin θα χρησιμοποιείται) επίλεξε κάποια προτεραιότητα προβλημάτων. Στην αρχή προβάλλονται όλα τα προβλήματα ανεξαρτήτου προτεραιότητας.
+        $selected_priority = isset($_GET['priority']) ? $_GET['priority'] : 'all';
 
         // Ξεκινάμε να "χτίζουμε" τη βασική εντολή SQL
         $sql = "SELECT issues.*, categories.name AS category_name 
@@ -71,6 +73,12 @@
                 $where_clauses[] = "issues.status = :status";
             }
             $params[':status'] = $selected_status;
+        }
+
+        //έλεγχος αν ο χρήστης είναι ο admin και αν υπάρχει το filter
+        if ($logged_in_admin && $selected_priority !== 'all') {
+            $where_clauses[] = "issues.priority = :priority";
+            $params[':priority'] = $selected_priority;
         }
 
         // Αν ο χρήστης έχει επιλέξει έστω και ένα φίλτρο, τα ενώνουμε με "AND" και τα κολλάμε στο $sql
@@ -170,11 +178,11 @@
         </form>
 
 
-        <!-- Φόρμα για φιλτράρισμα προβλημάτων με βάση κατηγορία, κατάσταση και ημερομηνία. Στέλνει το αίτημα στο ίδιο αρχείο (browse.php) με μέθοδο GET. -->
-        <form method="GET" action="browse.php" class="bg-white p-4 shadow-sm rounded border mb-4">
+                <form method="GET" action="browse.php" class="bg-white p-4 shadow-sm rounded border mb-4">
             <h6 class="mb-3 text-secondary fw-bold border-bottom pb-2">Φιλτράρισμα Προβλημάτων</h6>
             <div class="row g-3 align-items-end">
-                <div class="col-md-3">
+                
+                <div class="col-md">
                     <label for="category" class="form-label small fw-bold text-muted mb-1">Κατηγορία</label>
                     <select name="category" id="category" class="form-select form-select-sm">
                         <option value="all">Όλες</option>
@@ -187,8 +195,8 @@
                         <?php endforeach; ?>
                     </select>
                 </div>
-                
-                <div class="col-md-3">
+
+                <div class="col-md">
                     <label for="status" class="form-label small fw-bold text-muted mb-1">Κατάσταση</label>
                     <select name="status" id="status" class="form-select form-select-sm">
                         <!-- Εδώ κάνουμε loop σε όλες τις καταστάσεις που έχουμε τραβήξει από τη βάση και τις εμφανίζουμε ως επιλογές στο dropdown. -->
@@ -200,17 +208,32 @@
                     </select>
                 </div>
                 
-                <div class="col-md-3">
+                <div class="col-md">
                     <label for="sort" class="form-label small fw-bold text-muted mb-1">Ημερομηνία</label>
                     <select name="sort" id="sort" class="form-select form-select-sm">
                         <option value="desc" <?= ($sort_date == 'desc') ? 'selected' : '' ?>>Πιο πρόσφατα πρώτα</option>
                         <option value="asc" <?= ($sort_date == 'asc') ? 'selected' : '' ?>>Πιο παλιά πρώτα</option>
                     </select>
                 </div>
-                
-                <div class="col-md-3 d-grid">
-                    <button type="submit" class="btn btn-sm btn-primary">Εφαρμογή Φίλτρων</button>
+
+                <?php if ($logged_in_admin): ?>
+                    <div class="col-md">
+                        <label for="priority" class="form-label small fw-bold text-primary mb-1">
+                            <i class="bi bi-shield-lock me-1"></i>Προτεραιότητα (Admin)
+                        </label>
+                        <select name="priority" id="priority" class="form-select form-select-sm border-primary">
+                            <option value="all" <?= ($selected_priority == 'all') ? 'selected' : '' ?>>Όλες</option>
+                            <option value="Χαμηλή" <?= ($selected_priority == 'Χαμηλή') ? 'selected' : '' ?>>Χαμηλή</option>
+                            <option value="Μεσαία" <?= ($selected_priority == 'Μεσαία') ? 'selected' : '' ?>>Μεσαία</option>
+                            <option value="Υψηλή" <?= ($selected_priority == 'Υψηλή') ? 'selected' : '' ?>>Υψηλή</option>
+                        </select>
+                    </div>
+                <?php endif; ?>
+
+                <div class="col-md-auto d-grid">
+                    <button type="submit" class="btn btn-sm btn-primary px-4">Εφαρμογή Φίλτρων</button>
                 </div>
+
             </div>
         </form>
 
