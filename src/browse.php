@@ -50,8 +50,18 @@
         //Διαβάζουμε αν επέλεξε ο χρήστης (μόνο για τον admin θα χρησιμοποιείται) επίλεξε κάποια προτεραιότητα προβλημάτων. Στην αρχή προβάλλονται όλα τα προβλήματα ανεξαρτήτου προτεραιότητας.
         $selected_priority = isset($_GET['priority']) ? $_GET['priority'] : 'all';
 
-        // Ξεκινάμε να "χτίζουμε" τη βασική εντολή SQL
-        $sql = "SELECT issues.*, categories.name AS category_name 
+        // Ξεκινάμε να "χτίζουμε" τη βασική εντολή SQL.
+        // Εδώ ενσωματώνουμε τον τύπο υπολογισμού του Priority Score "on the fly"!
+        $sql = "SELECT issues.*, categories.name AS category_name,
+                (
+                    (categories.weight * 2) + 
+                    (issues.upvotes * 0.5) + 
+                    CASE 
+                        WHEN TIMESTAMPDIFF(HOUR, issues.created_at, NOW()) <= 24 THEN 5
+                        WHEN TIMESTAMPDIFF(HOUR, issues.created_at, NOW()) <= 72 THEN 3
+                        ELSE 1
+                    END
+                ) AS priority_score
                 FROM issues 
                 JOIN categories ON issues.category_id = categories.category_id";
 
@@ -86,14 +96,21 @@
             $sql .= " WHERE " . implode(" AND ", $where_clauses);
         }
 
-        // Τέλος, προσθέτουμε την ταξινόμηση (Πιο πρόσφατα / Πιο παλιά)
-        if ($sort_date === 'asc') {
-            $sql .= " ORDER BY issues.created_at ASC";
+        //Τέλος, προσθέτουμε την ταξινόμηση (ΜΟΝΟ για τον admin εμφανίζονται με σειρά priority score) 
+        //Αν ο χρήστης δεν είναι ο admin τότε τα issues εμφανίζονται με βάση την ημερομηνία δημιουργίας (τα πιο πρόσφατα πρώτα).
+        if ($logged_in_admin) {
+            $sql .= " ORDER BY priority_score DESC, ";
         } else {
-            $sql .= " ORDER BY issues.created_at DESC";
+            $sql .= " ORDER BY ";
+        }
+        
+        if ($sort_date === 'asc') {
+            $sql .= "issues.created_at ASC";
+        } else {
+            $sql .= "issues.created_at DESC";
         }
 
-        // Εκτελούμε το τελικό, δυναμικό ερώτημα!
+        //Εκτελούμε το τελικό ερώτημα.
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
 ?>
@@ -274,44 +291,74 @@
             echo '<div class="col-12 col-lg-6">';
             echo '<div class="card h-100 shadow-sm border-0 d-flex flex-column">';
 
-            echo '<div class="card-header bg-white d-flex justify-content-between align-items-center border-bottom-0">';
+           //HEADER ΚΑΡΤΑΣ
+            echo '<div class="card-header bg-white d-flex justify-content-between align-items-center border-bottom-0 pb-0">';
             echo '<span class="badge bg-primary">'.htmlspecialchars($row['category_name']).'</span>';
             $date_format = date('d/m/Y', strtotime($row['created_at']));
             echo '<small class="text-muted">'.$date_format.'</small>';
             echo '</div>';
 
-            echo '<div class="card-body flex-grow-1">';
+            // ΚΥΡΙΩΣ ΣΩΜΑ (Χωρισμένο σε Αριστερή και Δεξιά στήλη)
+            echo '<div class="card-body d-flex flex-column">';
+            echo '<div class="row flex-grow-1 align-items-center">'; // align-items-center για να κεντράρει κάθετα το grid με το κείμενο
+
+            // ΑΡΙΣΤΕΡΗ ΣΤΗΛΗ: Τίτλος, Περιγραφή, Τοποθεσία
+            echo '<div class="col-12 col-xl-7 d-flex flex-column mb-3 mb-xl-0">';
             echo '<h5 class="card-title">'.htmlspecialchars($row['title']).'</h5>';
-            echo '<p class="card-text text-secondary small">' . htmlspecialchars($row['description']) . '</p>';
-            echo '<p class="card-text"><small class="text-muted"><strong>Τοποθεσία:</strong> ' . htmlspecialchars($row['address']) . '</small></p>';
+            echo '<p class="card-text text-secondary small flex-grow-1 mb-2">' . htmlspecialchars($row['description']) . '</p>';
+            echo '<p class="card-text mb-0"><small class="text-muted"><strong>Τοποθεσία:</strong> ' . htmlspecialchars($row['address']) . '</small></p>';
             echo '</div>';
 
-            echo '<div class="card-footer bg-white d-flex justify-content-between align-items-center border-top-0 mt-auto pb-3">';
-            
-            echo '<div class="d-flex flex-column align-items-center">';
-            //Χρησιμοποιείται η get_badge_class για να αποφασίσουμε με τι style θα εμφανιστεί το badge που υποδεικνύει την κατάσταση της αναφοράς του issue
+            //ΔΕΞΙΑ ΣΤΗΛΗ: Το 2x2 Grid με τα κουμπιά και το Score
+            echo '<div class="col-12 col-xl-5">';
+            echo '<div class="row g-2">'; // g-2 δημιουργεί ομοιόμορφο κενό ανάμεσα στα 4 στοιχεία
+
+            // 1. ΠΑΝΩ ΑΡΙΣΤΕΡΑ: Upvotes
+            echo '<div class="col-6 d-grid">';
+            echo '<button class="btn btn-sm ' . $btn_class . ' upvote_button" data-ticket="' . $ticket_id . '" ' . $disabled_attribute . '>';
+            echo '<span class="vote-icon">👍</span> <span class="vote-count fw-bold">' . $row['upvotes'] . '</span>';
+            echo '</button>';
+            echo '</div>';
+
+            // 2. ΠΑΝΩ ΔΕΞΙΑ: Priority Score (Μόνο για Admin)
+            echo '<div class="col-6 d-grid">';
+            if ($logged_in_admin) {
+                $score = number_format($row['priority_score'], 1);
+                // Βάζουμε d-flex και align-items-center για να μοιάζει με κουμπί σε μέγεθος
+                echo '<span class="badge bg-dark text-warning border border-warning d-flex align-items-center justify-content-center" title="Priority Score" style="font-size: 0.85rem;">';
+                echo '<i class="bi bi-graph-up-arrow me-1"></i>Score: ' . $score;
+                echo '</span>';
+            } else {
+                echo '<div></div>'; // Κενό div για να μη χαλάσει το πλέγμα αν δεν είναι admin
+            }
+            echo '</div>';
+
+            // 3. ΚΑΤΩ ΑΡΙΣΤΕΡΑ: Προβολή Φωτογραφίας
+            echo '<div class="col-6 d-grid">';
+            if ($has_image) {
+                echo '<button class="btn btn-info custom-popup-btn p-1" style="font-size: 0.75rem; font-weight: bold;" type="button" data-image-src="' . htmlspecialchars($image_path) . '">Φωτογραφία</button>';
+            } else {
+                echo '<div></div>'; // Κενό div αν δεν υπάρχει φωτό
+            }
+            echo '</div>';
+
+            // 4. ΚΑΤΩ ΔΕΞΙΑ: Προβολή Λεπτομερειών
+            echo '<div class="col-6 d-grid">';
+            echo '<button class="btn default p-1" style="font-size: 0.75rem; font-weight: bold; background-color: #f8f9fa; border: 1px solid #ddd;" type="button" onclick="window.location.href=\'more.php?ticket_id=' . $ticket_id . '\'">Λεπτομέρειες</button>';
+            echo '</div>';
+
+            echo '</div>'; // Κλείνει το row g-2 (Το 2x2 πλέγμα)
+            echo '</div>'; // Κλείνει η δεξιά στήλη
+
+            echo '</div>'; // Κλείνει το κεντρικό row του Body
+            echo '</div>'; // Κλείνει το card-body
+
+            //FOOTER ΚΑΡΤΑΣ: Status και Ticket ID 
+            echo '<div class="card-footer bg-white d-flex flex-column align-items-start border-top-0 pt-0 pb-3">';
             $badge_css_class = get_badge_class($current_status);
             echo '<span class="badge ' . $badge_css_class . ' mb-1">' . htmlspecialchars($current_status) . '</span>';
             echo '<small class="text-muted fw-bold">#' . $ticket_id . '</small>';
             echo '</div>';
-
-            echo '<div class="d-flex align-items-center gap-2">';
-            echo '<button class="btn btn-sm ' . $btn_class . ' upvote_button" data-ticket="' . $ticket_id . '" ' . $disabled_attribute . '>';
-            echo '<span class="vote-icon">👍</span> ';
-            echo '<span class="vote-count fw-bold">' . $row['upvotes'] . '</span>';
-            echo '</button>';
-
-            // ΠΡΟΣΘΗΚΗ ΚΟΥΜΠΙΟΥ ΓΙΑ ΕΜΦΑΝΙΣΗ ΤΗΣ ΦΩΤΟΓΡΑΦΙΑΣ
-            // ΠΡΟΣΘΕΤΟΥΜΕ ΚΑΙ ΤΟ PHOTO_PATH ΑΠΟ ΤΗΝ DB ΓΙΑΤΙ ΤΟ ΧΡΕΙΑΖΟΜΑΣΤΕ ΣΤΗΝ js του κουμπιου
-            if ($has_image) {
-                echo '<button class="btn btn-sm btn-info custom-popup-btn" type="button"  data-image-src="' . htmlspecialchars($image_path) . '">Προβολή Φωτογραφίας</button>';
-            }
-
-            //Χρησιμοποιώ την default κλάση από τα badges στο style.css (ανακυκλώνω κώδικα!)
-            echo '<button class="btn btn-sm default" type="button" onclick="window.location.href=\'more.php?ticket_id=' . $ticket_id . '\'">Προβολή Λεπτομερειών!</button>';
-            
-            echo '</div>'; // κλείνει το d-flex των κουμπιών
-            echo '</div>'; // κλείνει το card-footer
 
             echo '</div>'; // Κλείνει το card
             echo '</div>'; // Κλείνει το col-12 col-lg-6
