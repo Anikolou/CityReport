@@ -20,8 +20,48 @@
         header("Location: browse.php");
         exit;
     }
-
     $ticket_id = trim($_GET['ticket_id']);
+
+
+    //ΑΛΛΑΓΗ ΚΑΤΑΣΤΑΣΗΣ ISSUE ΑΠΌ ΤΟΝ ADMIN
+    if ($logged_in_admin && $_SERVER['REQUEST_METHOD'] && isset($_POST['new_status'])) {
+        $new_status = trim($_POST['new_status']);
+        $allowed_statuses = ['Υποβλήθηκε', 'Σε Εξέλιξη', 'Επιλύθηκε']; //προσοχή ορίζουμε και εδώ τα allowed_statuses και ας έρχονται από dropdown menus ώστε να μην δεχθούμε κακόβουλες επιθέσεις από POST REQUESTS στην db
+
+        if (in_array($new_status, $allowed_statuses)) {
+            $updateStmt = $pdo->prepare("UPDATE issues SET status = :status WHERE ticket_id = :ticket_id");
+            $updateStmt->execute([
+                ':status' => $new_status,
+                ':ticket_id' => $ticket_id
+            ]);
+            
+            // Κάνουμε ανακατεύθυνση στην ίδια σελίδα για να καθαρίσει το POST request (ώστε να μη γίνει διπλή υποβολή με F5)
+            header("Location: more.php?ticket_id=" . $ticket_id);
+            exit;
+        }
+    }
+
+    //Διαγραφή εγγραφής issue από τον admin
+    //Παίρνουμε το ticket_id από το GET request και το input delete_ticket από το POST request που στέλνεται από το form που πατάει ο admin στο παράθυρο επιβεβαίωσης διαγραφής.
+    if ($logged_in_admin && $_SERVER['REQUEST_METHOD'] && isset($_POST['delete_ticket'])) {
+        
+        //Βρίσκουμε και διαγράφουμε την εικόνα από τον server (αν υπάρχει)
+        $images_to_delete = glob("uploads/" . $ticket_id . ".*");
+        foreach ($images_to_delete as $img_file) {
+            if (is_file($img_file)) {
+                unlink($img_file); // Η unlink διαγράφει το αρχείο από τον δίσκο
+            }
+        }
+
+        // Διαγράφουμε την εγγραφή από τον πίνακα issues
+        $deleteStmt = $pdo->prepare("DELETE FROM issues WHERE ticket_id = :ticket_id");
+        $deleteStmt->execute([':ticket_id' => $ticket_id]);
+        
+        //Ανακατεύθυνση πίσω στη λίστα εφόσον η εγγραφή έχει διαγραφεί
+        header("Location: browse.php");
+        exit;
+    }
+
 
     // Αντλούμε τις λεπτομέρειες του συγκεκριμένου issue από τη βάση δεδομένων
     $sql = "SELECT issues.*, categories.name AS category_name 
@@ -150,10 +190,10 @@
                     <!-- Εμφάνιση διαφορετικών επιλογών στο navbar ανάλογα με το αν ο admin είναι συνδεδεμένος ή όχι -->
                     <?php if ($logged_in_admin): ?>
                         <li class="nav-item">
-                            <a class="nav-link text-info fw-bold" href="admin-dashboard.php">Γεια σας, <?= htmlspecialchars($logged_in_admin['full_name']) ?></a>
+                            <a class="nav-link" href="admin-dashboard.php">Γεια σας, <?= htmlspecialchars($logged_in_admin['full_name']) ?></a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-danger" href="logout.php">Αποσύνδεση</a>
+                            <a class="nav-link" href="logout.php">Αποσύνδεση</a>
                         </li>
                     <?php else: ?>
                         <li class="nav-item">
@@ -230,6 +270,76 @@
                         <span class="text-muted">Δεν υπάρχει εικόνα</span>
                     </div>
                 <?php endif; ?>
+
+                <?php if ($logged_in_admin): ?>
+                    <div class="mt-4 mb-2 d-flex justify-content-center gap-3 w-100">
+
+                        <form method="POST" action="" class="m-0 p-0">
+                            <div class="input-group" style="max-width: 280px;">
+                                <label class="input-group-text bg-primary text-white fw-bold" for="status-select">Κατάσταση:</label>
+                                <select name="new_status" class="form-select fw-bold text-secondary" id="status-select" onchange="this.form.submit()">
+                                    <option value="Υποβλήθηκε" <?= $current_status === 'Υποβλήθηκε' ? 'selected' : '' ?>>Υποβλήθηκε</option>
+                                    <option value="Σε Εξέλιξη" <?= $current_status === 'Σε Εξέλιξη' ? 'selected' : '' ?>>Σε Εξέλιξη</option>
+                                    <option value="Επιλύθηκε" <?= $current_status === 'Επιλύθηκε' ? 'selected' : '' ?>>Επιλύθηκε</option>
+                                </select>
+                            </div>
+                        </form>
+
+                        <button type="button" id="btn-delete-record" class="btn btn-danger px-4 shadow-sm fw-bold">
+                            Διαγραφή Εγγραφής
+                        </button>
+
+                <!--Παράθυρο Διαγραφής -->
+                    <div id="custom-delete-window" class="custom-window-background" style="display: none; justify-content:center; align-items:center; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999;">
+                        <div class="custom-modal-box" style="background:#fff; padding:25px; border-radius:8px; position:relative; min-width:350px; max-width: 500px; text-align:center;">
+                            
+                            <span id="custom-delete-close" style="position:absolute; top:10px; right:15px; font-size:24px; cursor:pointer;">&times;</span>
+                            
+                            <h2 style="margin-top: 0; color: #dc3545;">Επιβεβαίωση Διαγραφής</h2>
+                            
+                            <p style="font-size: 16px; line-height: 1.6; color: #333; margin: 20px 0;">
+                                ΕΙΣΤΕ ΣΙΓΟΥΡΟΣ/Η ΟΤΙ ΘΕΛΕΤΕ ΝΑ ΔΙΑΓΡΑΨΕΤΕ ΤΗΝ ΕΓΓΡΑΦΗ <strong>#<?= htmlspecialchars($ticket_id) ?></strong>;
+                            </p>
+                            
+                            <div style="display: flex; justify-content: center; gap: 15px; margin-top: 25px;">
+                                <button type="button" id="btn-cancel-delete" class="btn btn-secondary px-4 fw-bold">Ακύρωση</button>
+                                
+                                <form method="POST" action="" class="m-0 p-0">
+                                    <input type="hidden" name="delete_ticket" value="1"> <!--Το κρυφό input που με POST πηγαίνει στην db και της λεει να διαγράψει την εγγραφή -->
+                                    <button type="submit" class="btn btn-danger px-4 fw-bold">Ναι, Διαγραφή</button>
+                                </form>
+                            </div>
+                            
+                        </div>
+                    </div>
+
+                    
+                    <script>
+                        //Λειτουργίκοτητα του κουμπιού διαγραφής και του παραθύρου επιβεβαίωσης
+                        document.addEventListener("DOMContentLoaded", function() {
+                            const showBtn = document.getElementById('btn-delete-record');
+                            const deleteWindow = document.getElementById('custom-delete-window');
+                            const closeBtn = document.getElementById('custom-delete-close');
+                            const cancelBtn = document.getElementById('btn-cancel-delete');
+                            //Αν ο χρήστης πατήσει το κουμπί διαγραφής, εμφανίζεται το παράθυρο επιβεβαίωσης
+                            if (showBtn) {
+                                showBtn.addEventListener('click', function(e) {
+                                    e.preventDefault();
+                                    deleteWindow.style.display = 'flex';
+                                });
+                            }
+                            //Αν ο χρήστης πατήσει το κουμπί ακύρωσης ή το "X", κλείνει το παράθυρο επιβεβαίωσης
+                            function hideDeletePopup() {
+                                deleteWindow.style.display = 'none';
+                            }
+                            //Προσθέτουμε event listeners για τα κουμπιά κλεισίματος και ακύρωσης
+                            if (closeBtn) closeBtn.addEventListener('click', hideDeletePopup);
+                            if (cancelBtn) cancelBtn.addEventListener('click', hideDeletePopup);
+                        });
+                    </script>
+
+                <?php endif; ?>
+
             </div>
         </div>
     </div>
