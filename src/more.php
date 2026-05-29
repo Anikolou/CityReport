@@ -49,7 +49,7 @@
         $images_to_delete = glob("uploads/" . $ticket_id . ".*");
         foreach ($images_to_delete as $img_file) {
             if (is_file($img_file)) {
-                unlink($img_file); // Η unlink διαγράφει το αρχείο από τον δίσκο
+                unlink($img_file); // Η unlink διαγράφει το αρχείο
             }
         }
 
