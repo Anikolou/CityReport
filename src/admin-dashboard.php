@@ -24,8 +24,12 @@
     $totalReports = $stmtTotal->fetchColumn();
 
     // 2. Μέσος όρος upvotes
-    $stmtAvgUpvotes = $pdo->query("SELECT AVG(upvotes) FROM `issues`");
-    $avgUpvotes = round($stmtAvgUpvotes->fetchColumn(), 2);
+    if ($totalReports == 0) {
+        $avgUpvotes = 0; // Για να αποφύγουμε διαίρεση με το μηδέν
+    } else {
+        $stmtAvgUpvotes = $pdo->query("SELECT AVG(upvotes) FROM `issues`");
+        $avgUpvotes = round($stmtAvgUpvotes->fetchColumn(), 2);
+    }
 
     // 3. Αναφορές ανά κατηγορία (ΕΜΦΑΝΙΣΗ ΟΛΩΝ ΤΩΝ ΚΑΤΗΓΟΡΙΩΝ ΑΚΟΜΑ ΚΑΙ ΜΕ 0)
     // Χρησιμοποιούμε RIGHT JOIN (ή LEFT JOIN ξεκινώντας από το categories).
@@ -49,19 +53,17 @@
         SELECT all_statuses.status_name AS status, COUNT(i.id) AS count
         FROM (
             SELECT 'Υποβλήθηκε' AS status_name UNION ALL
-            SELECT 'Σε επεξεργασία' AS status_name UNION ALL
-            SELECT 'Ολοκληρώθηκε' AS status_name UNION ALL
-            SELECT 'Απορρίφθηκε' AS status_name
+            SELECT 'Σε εξέλιξη' AS status_name UNION ALL
+            SELECT 'Επιλύθηκε' AS status_name
         ) AS all_statuses
         LEFT JOIN `issues` i ON all_statuses.status_name = i.status
         GROUP BY all_statuses.status_name
         ORDER BY 
             CASE all_statuses.status_name
                 WHEN 'Υποβλήθηκε' THEN 1
-                WHEN 'Σε επεξεργασία' THEN 2
-                WHEN 'Ολοκληρώθηκε' THEN 3
-                WHEN 'Απορρίφθηκε' THEN 4
-                ELSE 5
+                WHEN 'Σε εξέλιξη' THEN 2
+                WHEN 'Επιλύθηκε' THEN 3
+                ELSE 4
             END
     ";
     $reportsByStatus = $pdo->query($queryStatus)->fetchAll(PDO::FETCH_ASSOC);
